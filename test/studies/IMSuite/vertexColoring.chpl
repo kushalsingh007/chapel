@@ -104,27 +104,28 @@ module vertexColoring {
 
     /* Initializes all the fields of the abstract node. */
     proc initialize() {
-       forall i in D {
-            nlabel[i] = i;
-            nodeSet[i] =  new Node();
-            nodeSet[i].parent = parent[i];
+        forall (node, num_label, i) in zip(nodeSet, nlabel, D) {
+            num_label = i;
+            node = new Node();
+            node.parent = parent[i];
             var count = 0;
             for j in D {
-                if(adj_graph(i,j) == 1 && nodeSet[i].parent != j) then
+                if(adj_graph(i,j) == 1 && node.parent != j) then
                     count+=1;
             }
 
-            nodeSet[i].neighbourD = {1..count};
+            node.neighbourD = {1..count};
             count=1;
 
             for j in D {
-                if(adj_graph(i,j) == 1 && nodeSet[i].parent != j) {
-                    nodeSet[i].children[count]=j;
+                if(adj_graph(i,j) == 1 && node.parent != j) {
+                    node.children[count] = j;
                     count+=1;
                 }
             }
-            nodeSet[i].color = nlabel[i];
+            node.color = num_label;
         }
+
         colorLabel = log2(nodes);
         if(1<<colorLabel < nodes) then
             colorLabel+=1;
@@ -139,11 +140,11 @@ module vertexColoring {
         :rtype: int(64)
     */
 	proc loadweight(weight: int): int {
-                var count=0;
-                for i in 0..loadValue-1 {
-                        count+=1;
-                }
-                return count+weight;
+        var count=0;
+        for i in 0..loadValue-1 {
+            count+=1;
+         }
+        return count+weight;
     }
 
     /* Runs the algorithm till the graph consists of atmost six colors. */
