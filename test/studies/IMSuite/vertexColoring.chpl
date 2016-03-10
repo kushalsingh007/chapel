@@ -30,7 +30,8 @@ module vertexColoring {
     var nodes: int;
     var colorLabel: int;
     var D : domain(1);
-    var adj_graph :[D][D] int;
+    var N : domain(2);
+    var adj_graph :[N] int;
     var parent:[D] int;
     var root: int;
     var nlabel:[D] int;
@@ -44,7 +45,8 @@ module vertexColoring {
       var parent: int;                  // specifies the parent of a node
       var color: int;                   // specifies the color of a node
       var receivedColor: int;           // specifies the color received by a node
-      var children: [1..0] int;         // list of neighbor ids
+      var neighbourD : domain(1);       // specifies the domain for the children array
+      var children: [neighbourD] int;    // list of neighbor ids
     }
 
     /** Abstract node representation */
@@ -64,13 +66,14 @@ module vertexColoring {
 
         nodes = reader.read(int);
         D = {0..(nodes-1)};
+        N = {0..(nodes-1), 0..(nodes-1)};
         root = reader.read(int);
         var line:string;
 
         for i in D {
             reader.read(line);
             for j in 0..(line.length-1) {
-                adj_graph[i][j]=(line[j+1]:int);
+                adj_graph(i,j)=(line[j+1]:int);
             }
         }
 
@@ -105,9 +108,20 @@ module vertexColoring {
             nlabel[i] = i;
             nodeSet[i] =  new Node();
             nodeSet[i].parent = parent[i];
-            forall j in D {
-                if(adj_graph[i][j] == 1 && nodeSet[i].parent != j) then
-                    nodeSet[i].children.push_back(j);
+            var count = 0;
+            for j in D {
+                if(adj_graph(i,j) == 1 && nodeSet[i].parent != j) then
+                    count+=1;
+            }
+
+            nodeSet[i].neighbourD = {1..count};
+            count=1;
+
+            for j in D {
+                if(adj_graph(i,j) == 1 && nodeSet[i].parent != j) {
+                    nodeSet[i].children[count]=j;
+                    count+=1;
+                }
             }
             nodeSet[i].color = nlabel[i];
         }
@@ -126,7 +140,7 @@ module vertexColoring {
     */
 	proc loadweight(weight: int): int {
                 var count=0;
-                for i in {0..loadValue-1}{
+                for i in 0..loadValue-1 {
                         count+=1;
                 }
                 return count+weight;
@@ -145,11 +159,7 @@ module vertexColoring {
        :rtype: bool
     */
     proc checkAgain(): bool {
-        var flag = false;
-        forall i in D with (ref flag){
-            if(again[i]) then
-                flag=true;
-        }
+        var flag = || reduce again;
         return flag;
     }
 
@@ -168,7 +178,7 @@ module vertexColoring {
             if(i!=root){
                 again[i]=false;
                 var xored = nodeSet[i].receivedColor ^ nodeSet[i].color;
-                for k in {0..(colorLabel-1)}{
+                for k in 0..colorLabel-1 {
                     var pval = 1<<k;
                     var nand :int = xored & pval;
                     if(nand == pval) {
@@ -193,7 +203,7 @@ module vertexColoring {
 
    /* Reduces the number of colors from six to three. */
    proc six2three() {
-       for k in {1..3} {
+       for k in 1..3 {
             var x = 6-k;
             var randStream: RandomStream = new RandomStream(3);
             var ncolor : int = randStream.getNext(): int;
@@ -201,39 +211,27 @@ module vertexColoring {
             shiftDown();
             if(nodeSet[root].color == ncolor) then
                ncolor = (ncolor+1)%3;
-           nodeSet[root].color = ncolor;
+            nodeSet[root].color = ncolor;
 
-           forall i in D {
+            forall i in D {
                 var cparent=0,cchild=0;
-                   if(nodeSet[i].color == x) {
-                       cparent=getColor(nodeSet[i].parent);
-                       if(nodeSet[i].children.size >0) then
-                           cchild=getColor(nodeSet[i].children[1]);
-                       if(cparent+cchild == 1) then
-                           nodeSet[i].color=2;
-                       else if(cparent+cchild == 2) then
-                           nodeSet[i].color=1;
-                       else if(cparent+cchild == 3) {
-                           if(cparent != 0 && cchild != 0) then
-                               nodeSet[i].color=0;
-                           else
-                               nodeSet[i].color=1;
-                       }
-                       else if(cparent+cchild == 4) {
-                           if(cparent != 0 && cchild != 0) then
-                               nodeSet[i].color=0;
-                           else
-                               nodeSet[i].color=1;
-                       }
-                       else if(cparent+cchild == 5) {
-                           if(cparent != 0 && cchild != 0) then
-                               nodeSet[i].color=0;
-                           else
-                               nodeSet[i].color=1;
-                       }
-                       else
-                           nodeSet[i].color = 0;
-                   }
+                if(nodeSet[i].color == x) {
+                    cparent=getColor(nodeSet[i].parent);
+                    if(nodeSet[i].children.size >0) then
+                        cchild=getColor(nodeSet[i].children[1]);
+                    if(cparent+cchild == 1) then
+                        nodeSet[i].color=2;
+                    else if(cparent+cchild == 2) then
+                        nodeSet[i].color=1;
+                    else if( (cparent+cchild >=3) && (cparent+cchild<=5)) {
+                        if(cparent != 0 && cchild != 0) then
+                            nodeSet[i].color=0;
+                        else
+                            nodeSet[i].color=1;
+                    }
+                    else
+                        nodeSet[i].color = 0;
+                }
 
             if(loadValue != 0) then
                 nval[i] = loadweight(nval[i]+i);
@@ -245,7 +243,7 @@ module vertexColoring {
    /* Shifts the color of parent down to its children. */
    proc shiftDown() {
         forall i in D {
-            for j in {1..nodeSet[i].children.size} {
+            for j in 1..nodeSet[i].children.size {
                     sendColor(nodeSet[i].children[j], nodeSet[i].color);
             if(loadValue != 0) then
                 nval[i] = loadweight(nval[i]+i);
