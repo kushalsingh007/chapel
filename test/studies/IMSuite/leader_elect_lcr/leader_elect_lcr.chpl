@@ -21,16 +21,21 @@
 
  module leader_elect_lcr {
 
-     config var inputFile = "inputLCR100.txt";
-     config var outputFile = "outputLCR.txt";
-     config var verify = false;
+     config const inputFile = "input/inputleader_elect_lcr_8.txt";
+     config const outputFile = "output/outputLCR.txt";
 
+     /* Parameter to enable verification of the output */
+     config const verify = false;
+
+     /* Stores the total number of process */
      var processes: int;
+     /* Represents the domain over the number of nodes */
      var D : domain(1);
+     /* Stores the id's of each of the nodes in the ring */
      var IdStore: [D] int;
 
      /* Parameters to enable execution with load */
-     config var loadValue=0;
+     config const loadValue=0;
      var nval:[D] int;
 
     /*
@@ -38,11 +43,16 @@
         part of the Leader election algorithm.
     */
     class Process {
-        var id: int;            // specifies the identifier for each node.
-        var send: int;          // represents the identifier that the process will send to its neighbor.
-        var leaderId: int;      // represents the identifier of the leader.
-        var recievedId: int;    // represents the identifier that the process receives from its neighbor.
-        var status: bool;       // represents the status of the process and will be set to true for leader.
+        /* Specifies the identifier for each node. */
+        var id: int;
+        /* Represents the identifier that the process will send to its neighbor. */
+        var send: int;
+        /* Represents the identifier of the leader. */
+        var leaderId: int;
+        /* Represents the identifier that the process receives from its neighbor. */
+        var receivedId: int;
+        /* Represents the status of the process, set to true for leader. */
+        var status: bool;
      }
 
      /* Abstract node representation */
@@ -61,86 +71,72 @@
         processes = reader.read(int);
         D = {0..(processes-1)};
 
-        for i in 0..(processes-1) {
-            IdStore[i]=reader.read(int);
-        }
+        for i in 0..(processes-1) do IdStore[i]=reader.read(int);
 
         reader.close();
         inFile.close();
 
         initialize();
 
-        for round in 0..processes-1 {
-            leader_elect();
-        }
-        transmitLeader();
-        printii();
+        for round in 0..processes-1 do leader_elect();
 
-        if(verify) then
-            outputVerifier();
+        transmitLeader();
+        printLeader();
+
+        if(verify) then outputVerifier();
 
         if(loadValue != 0) {
-			var sumval: real = 0;
-            for i in 0..(processes-1) {
-                    sumval = sumval + nval[i];
-            }
-			if(sumval > 0) then
-                writeln();
-		}
+            var sumval: real = 0;
+            for i in 0..(processes-1) do sumval = sumval + nval[i];
+            if(sumval > 0) then writeln();
+        }
      }
 
 
-	/* Initializes all the fields of the abstract node. */
-	proc initialize() {
+    /* Initializes all the fields of the abstract node. */
+    proc initialize() {
         forall i in 0..(processes-1) {
-            processSet[i] = new Process();
-            processSet[i].id = IdStore[i];
-            processSet[i].leaderId = processSet[i].id;
-            processSet[i].send = processSet[i].id;
-            processSet[i].status = false;
+            const pid = IdStore[i];
+            processSet[i] = new Process(id=pid, leaderId=pid, send=pid,  status=false);
         }
-	}
+    }
 
     /*
         Aims to busy the threads by introducing the no-op instructions
         equivalent to the amount of load specified.
-        :arg  weight:	Specifies the current load value for a thread.
+        :arg  weight:    Specifies the current load value for a thread.
         :type: int(64)
         :returns: Updated load value.
         :rtype: int(64)
     */
-	proc loadweight(weight: int): int {
+    proc loadweight(weight: int): int {
         var count = 0;
-        for i in 0..(loadValue-1) {
-                count+=1;
-        }
+        for i in 0..(loadValue-1) do count+=1;
         return count+weight;
     }
 
     /* Aims at selecting the leader from a set of nodes. */
     proc leader_elect() {
         forall i in 0..(processes-1) {
-	        var x : int = (i + 1) % (processes);
-		    var sval : int = processSet[i].send;
-		    sendMessage(x, sval);
+            var x : int = (i + 1) % (processes);
+            var sval : int = processSet[i].send;
+            sendMessage(x, sval);
 
-		    if(loadValue != 0) then
-			    nval[i] = loadweight(nval[i]+i);
-		}
+            if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
+        }
 
         forall i in 0..(processes-1) {
-			if(processSet[i].recievedId > processSet[i].leaderId) {
-				processSet[i].send = processSet[i].recievedId;
-				processSet[i].leaderId = processSet[i].recievedId;
-			}
-			else if(processSet[i].recievedId == processSet[i].id) {
-				processSet[i].status = true;
-				processSet[i].leaderId = processSet[i].id;
-			}
+            if(processSet[i].receivedId > processSet[i].leaderId) {
+                processSet[i].send = processSet[i].receivedId;
+                processSet[i].leaderId = processSet[i].receivedId;
+            }
+            else if(processSet[i].receivedId == processSet[i].id) {
+                processSet[i].status = true;
+                processSet[i].leaderId = processSet[i].id;
+            }
 
-			if(loadValue != 0) then
-				nval[i] = loadweight(nval[i]+i);
-	    }
+            if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
+        }
     }
 
     /* Transmits the message from one node to another. */
@@ -148,22 +144,21 @@
         var leader : int;
         var k : int;
         forall i in 0..(processes-1) with (ref k) {
-			if(processSet[i].status) then
-				k=i+1;
+            if(processSet[i].status) then k=i+1;
         }
 
-		leader = k;
-		for i in 0..(processes-1) {
-            k = (k+1)%processes;       //This loop has potential to be optimized
+        leader = k;
+        for i in 0..(processes-1) {
+            k = (k+1)%processes;
             setLeader(leader, k);
-		}
-		processSet[leader-1].leaderId = leader;
+        }
+        processSet[leader-1].leaderId = leader;
     }
 
     /* Sets the leader for a node.
-        :arg uNode:	Leader node.
+        :arg uNode:    Leader node.
         :type: int(64)
-        :arg aNode:	Node whose leader has to be set.
+        :arg aNode:    Node whose leader has to be set.
         :type: int(64)
     */
     proc setLeader(uNode: int, aNode: int) {
@@ -177,11 +172,11 @@
         :type: int(64)
     */
     proc sendMessage(receiver: int, sval: int) {
-		processSet[receiver].recievedId = sval;
+        processSet[receiver].receivedId = sval;
     }
 
-    /* Writes the output to the user specified file. */
-    proc printii() {
+    /* Writes the leader to the user specified file. */
+    proc printLeader() {
         var outfile = open(outputFile, iomode.cw);
         var writer = outfile.writer();
         writer.writeln("Leader: " + processSet[0].leaderId);
@@ -191,12 +186,10 @@
 
     /* Validates the output resulting from the execution of the algorithm. */
     proc outputVerifier() {
-        var max: int = -1;//Integer.min;
+        var max: int = -1;
         for i in 0..(processes-1) {
-            if(max < IdStore[i]) then
-                max = IdStore[i];
+            if(max < IdStore[i]) then max = IdStore[i];
         }
-		if(max == processSet[(processSet[0].leaderId)-1].id) then
-			writeln("Output verified");
+        if(max == processSet[(processSet[0].leaderId)-1].id) then writeln("Output verified");
     }
 }
