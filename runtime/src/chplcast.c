@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2016 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -82,6 +82,8 @@ static int illegalFirstUnsChar(char c) {
     _type(base, width)  val;                                            \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
+    char buffer[256];                                                   \
+    char *token;                                                        \
     if (scanningNCounts() && numitems == 2) {                           \
       numitems = 1;                                                     \
     }                                                                   \
@@ -96,8 +98,17 @@ static int illegalFirstUnsChar(char c) {
           *invalidCh = '\0';                                            \
         }                                                               \
       } else {                                                          \
-        *invalid = 1;                                                   \
-        *invalidCh = *(str+numbytes);                                   \
+          strcpy(buffer,str);                                           \
+          token = strtok(buffer," ");                                   \
+          token = strtok(NULL," ");                                     \
+          if(token == NULL) {                                           \
+              *invalid = 0;                                             \
+              *invalidCh = '\0';                                        \
+          }                                                             \
+          else {                                                        \
+              *invalid = 1;                                             \
+              *invalidCh = *(str+numbytes);                             \
+          }                                                             \
       }                                                                 \
     } else {                                                            \
       *invalid = 1;                                                     \
@@ -123,7 +134,7 @@ chpl_bool c_string_to_chpl_bool(c_string str, int lineno, int32_t filename) {
   } else if (string_compare(str, "false") == 0) {
     return false;
   } else {
-    const char* message = 
+    const char* message =
       chpl_glom_strings(3, "Unexpected value when converting from string to bool: '",
                         str, "'");
     chpl_error(message, lineno, filename);
