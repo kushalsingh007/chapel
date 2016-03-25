@@ -67,7 +67,7 @@ static int illegalFirstUnsChar(char c) {
     char *buffer;                                                       \
     const char *token;                                                  \
     int length = strlen(str)-1;                                         \
-    buffer = (char *)chpl_malloc(sizeof(char)*(strlen(str)+1));         \
+    buffer = (char *)chpl_mem_alloc(sizeof(char)*(strlen(str)+1));      \
     strncpy(buffer,str,strlen(str)+1);                                  \
     while(length > 0 && isspace(str[length])) length--;                 \
     length++;                                                           \
@@ -81,7 +81,7 @@ static int illegalFirstUnsChar(char c) {
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
     }                                                                   \
-    chpl_free(buffer);                                                  \
+    chpl_mem_free(buffer);                                              \
     return val;                                                         \
   }
 
