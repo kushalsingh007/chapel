@@ -141,11 +141,13 @@ chpl_bool c_string_to_chpl_bool(c_string str, int lineno, int32_t filename) {
     _real_type(base, width) val;                                        \
     int numbytes;                                                       \
     int numitems = sscanf(str, format"%n", &val, &numbytes);            \
+    int length = strlen(str);                                           \
+    while(length > 0 && isspace(str[length-1])) length--;               \
     if (scanningNCounts() && numitems == 2) {                           \
       numitems = 1;                                                     \
     }                                                                   \
     if (numitems == 1) {                                                \
-      if (numbytes == strlen(str)) {                                    \
+      if (numbytes == length) {                                         \
         /* for negatives, sscanf works, but we wouldn't want chapel to */ \
         *invalid = 0;                                                   \
         *invalidCh = '\0';                                              \
