@@ -22,6 +22,7 @@
 #include "chplcast.h"
 #include "chpltypes.h"
 #include "chplfp.h"
+#include "chpl-mem-desc.h"
 #include "error.h"
 
 #include <ctype.h>
@@ -67,12 +68,12 @@ static int illegalFirstUnsChar(char c) {
     char *buffer;                                                       \
     const char *token;                                                  \
     int length = strlen(str)-1;                                         \
-    buffer = (char *)chpl_mem_alloc(sizeof(char)*(strlen(str)+1));      \
+    buffer = (char *)chpl_mem_alloc(strlen(str)+1,C_STR_2_NUM_BUF,0,NULL);  \
     strncpy(buffer,str,strlen(str)+1);                                  \
     while(length > 0 && isspace(str[length])) length--;                 \
     length++;                                                           \
     if (length >= 0) buffer[length]='\0';                               \
-    token = buffer;                                         \
+    token = buffer;                                                     \
     _type(base, width) val = (_type(base, width))strtol(token, &endPtr, 10);  \
     *invalid = (*str == '\0' || *endPtr != '\0');                       \
     *invalidCh = *endPtr;                                               \
@@ -81,7 +82,7 @@ static int illegalFirstUnsChar(char c) {
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
     }                                                                   \
-    chpl_mem_free(buffer);                                              \
+    chpl_mem_free(buffer,0,NULL);                                       \
     return val;                                                         \
   }
 
