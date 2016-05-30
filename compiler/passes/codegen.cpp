@@ -516,12 +516,10 @@ static const int maxUniquifyAddedChars = 25;
 static const int maxCNameAddedChars = 20;
 static char* longCNameReplacementBuffer = NULL;
 static Map<const char*, int> uniquifyNameCounts;
-static const char* uniquifyName(const char* name,
-                                Vec<const char*>* set1,
-                                Vec<const char*>* set2 = NULL) {
-  const char* newName = name;
+
+static const char* trimName(const char* name) {
   if (fMaxCIdentLen > 0 &&
-      (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
+      (int)(strlen(name) + maxCNameAddedChars) > fMaxCIdentLen)
   {
     // how much of the name to preserve
     int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
@@ -529,11 +527,19 @@ static const char* uniquifyName(const char* name,
       longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
       longCNameReplacementBuffer[prefixLen] = '\0';
     }
-    strncpy(longCNameReplacementBuffer, newName, prefixLen);
+    strncpy(longCNameReplacementBuffer, name, prefixLen);
     INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
     longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
-    name = newName = astr(longCNameReplacementBuffer);
+    name = astr(longCNameReplacementBuffer);
   }
+  return name;
+}
+
+static const char* uniquifyName(const char* name,
+                                Vec<const char*>* set1,
+                                Vec<const char*>* set2 = NULL) {
+  const char* newName = name;
+  name = newName = trimName(name);
   while (set1->set_in(newName) || (set2 && set2->set_in(newName))) {
     char numberTmp[64];
     int count = uniquifyNameCounts.get(name);
@@ -882,8 +888,13 @@ static void codegen_header() {
   // constants, or other global variables
   //
   forv_Vec(VarSymbol, var, globals) {
-    if (var->isRenameable())
-      var->cname = uniquifyName(var->cname, &cnames);
+    if (var->isRenameable()){
+      legalizeName(var->getModule());
+      if(cnames.set_in(trimName(var->cname)))
+        var->cname = uniquifyName(astr(var->cname, "_", var->getModule()->cname), &cnames);
+      else
+        var->cname = uniquifyName(var->cname, &cnames);
+    }
   }
   uniquifyNameCounts.clear();
 
@@ -892,8 +903,25 @@ static void codegen_header() {
   // global variables, or other functions
   //
   for_vector(FnSymbol, fn, functions) {
-    if (fn->isRenameable())
-      fn->cname = uniquifyName(fn->cname, &cnames);
+    if (fn->isRenameable()){
+      legalizeName(fn->getModule());
+      bool canModifyName = true;
+
+      ModuleSymbol* fnMod = fn->getModule();
+      if (fnMod->modTag == MOD_INTERNAL) {
+        canModifyName = false;
+      }
+
+      //
+      // Avoiding strange looking name "chpl__init_ModuleName_ModuleName"
+      // for the init function where the name of the function has the module
+      // name already appended to it.
+      //
+      if(canModifyName && cnames.set_in(trimName(fn->cname)))
+        fn->cname = uniquifyName(astr(fn->cname, "_", fn->getModule()->cname), &cnames);
+      else
+        fn->cname = uniquifyName(fn->cname, &cnames);
+    }
   }
   uniquifyNameCounts.clear();
 
