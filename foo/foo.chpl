@@ -9,8 +9,7 @@ proc foo(a:int) {
   return a+3;
 }
 
-//Foo.step3.chpl : Not sure about how the return value types are calculated :/ 
-//However theoretically this should not affect stuff
+//Foo.step3.chpl : Specify the return type explicitly 
 proc foo(a:int) : int {
   return a+3;
 }
