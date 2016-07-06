@@ -1,4 +1,6 @@
 /* hello.chpl:1 */
+#include "chpl__header.h"
+
  void chpl__init_hello(int64_t _ln_chpl, int32_t _fn_chpl) {
   c_string modFormatStr_chpl;
   c_string modStr_chpl;

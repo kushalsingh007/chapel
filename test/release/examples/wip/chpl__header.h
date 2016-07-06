@@ -25,6 +25,8 @@ typedef struct chpl__class_localscoforall_fn_s* _class_localscoforall_fn;
 typedef struct chpl_object_s* object;
 typedef struct chpl_listNode_BaseArr_chpl_s* listNode_BaseArr_chpl;
 typedef struct chpl_listNode_BaseDom_chpl_s* listNode_BaseDom_chpl;
+
+
 /*** Enumerated Types ***/
 
 typedef enum {iterKind_leader = UINT32(1), iterKind_follower = UINT32(2), iterKind_standalone = UINT32(3)} iterKind;
@@ -220,6 +222,21 @@ typedef string *_ref_string;
 typedef syserr *_ref_syserr;
 typedef uint64_t *_ref_uint64_t;
 typedef uint8_t *_ref_uint8_t;
+
+
+/*** Alpha - Beta ***/
+extern const chpl__class_id chpl__cid_chpl___EndCount_atomic_int64_int64_t;
+
+typedef struct chpl_object_s {
+  chpl__class_id chpl__cid;
+} chpl_object_object;
+
+typedef struct chpl_chpl___EndCount_atomic_int64_int64_t_s /* : object */ {
+  chpl_object_object super;
+  atomic_int64 i;
+  int64_t taskCnt;
+  c_void_ptr taskList;
+} chpl_chpl___EndCount_atomic_int64_int64_t_object;
 
 /*** Function Prototypes ***/
 
@@ -559,3 +576,209 @@ static void chpl__init_hello(int64_t _ln_chpl, int32_t _fn_chpl);
 int64_t chpl_gen_main(chpl_main_argument* const _arg);
 static void chpl_user_main(void);
 static void chpl__autoDestroyGlobals(void);
+
+/*** Global Variables ***/
+
+c_ptr_uint8_t bufferType;
+atomic_int64 numPrivateObjects;
+chpl___EndCount_atomic_int64_int64_t _remoteEndCountType;
+chpl_bool chpl__testParOn;
+int32_t chpl_nodeID_t;
+int32_t chpl_sublocID_t;
+locale rootLocale;
+locale origRootLocale;
+locale dummyLocale;
+int64_t numLocales;
+string _str_literal_1760;
+string _str_literal_2711;
+string _str_literal_2713;
+string _str_literal_906;
+string _str_literal_908;
+string _str_literal_1752;
+string _str_literal_32;
+string _str_literal_1754;
+string _str_literal_1749;
+string _str_literal_806;
+string _str_literal_1483;
+string _str_literal_859;
+string _str_literal_2329;
+string _str_literal_2331;
+string _str_literal_1485;
+string _str_literal_863;
+string _str_literal_510;
+string _str_literal_520;
+string _str_literal_1491;
+string _str_literal_537;
+string _str_literal_541;
+string _str_literal_1497;
+string _str_literal_306;
+string _str_literal_1500;
+string _str_literal_311;
+string _str_literal_1520;
+string _str_literal_318;
+string _str_literal_1548;
+string _str_literal_1551;
+string _str_literal_339;
+string _str_literal_341;
+string _str_literal_987;
+string _str_literal_680;
+string _str_literal_694;
+string _str_literal_2657;
+string _str_literal_2668;
+string _str_literal_367;
+string _str_literal_375;
+string _str_literal_387;
+string _str_literal_1890;
+string _str_literal_1899;
+string _str_literal_1906;
+string _str_literal_1908;
+string _str_literal_1910;
+string _str_literal_1912;
+string _str_literal_1968;
+string _str_literal_1970;
+string _str_literal_1988;
+string _str_literal_2015;
+string _str_literal_2022;
+string _str_literal_2058;
+string _str_literal_2061;
+string _str_literal_2063;
+string _str_literal_2065;
+string _str_literal_2067;
+string _str_literal_2069;
+string _str_literal_2109;
+string _str_literal_2111;
+int64_t numThreadsPerLocale;
+int64_t chpl_table_index_type;
+int64_t dataParTasksPerLocale;
+chpl_bool dataParIgnoreRunningTasks;
+int64_t dataParMinGranularity;
+DefaultDist defaultDist;
+chpl_bool doneCreatingLocales;
+DefaultRectangularDom_1_int64_t_F chpl_emptyLocaleSpace;
+DefaultRectangularArr_locale_1_int64_t_F chpl_emptyLocales;
+chpl_localeTreeRecord chpl_localeTree;
+DefaultRectangularArr_locale_1_int64_t_F Locales;
+DefaultRectangularDom_1_int64_t_F LocaleSpace;
+chpl_bool memTrack;
+chpl_bool memStats;
+chpl_bool memLeaksByType;
+chpl_bool memLeaks;
+uint64_t memMax;
+uint64_t memThreshold;
+string memLog;
+string memLeaksLog;
+string memLeaksByDesc;
+uint64_t cMemMax;
+uint64_t cMemThreshold;
+chpl_bool printModuleInitOrder;
+int32_t moduleInitLevel;
+uint8_t uint_A;
+uint8_t uint_Z;
+uint8_t uint_a;
+uint8_t uint_z;
+uint8_t uint_0;
+uint8_t uint_9;
+uint8_t uint_space;
+uint8_t uint_tab;
+uint8_t uint_newline;
+uint8_t uint_return;
+chpl_bool chpl__init_ChapelStringLiterals_p;
+chpl_bool chpl__init_DSIUtil_p;
+chpl_bool chpl__init_SysCTypes_p;
+chpl_bool chpl__init_hello_p;
+chpl_bool chpl__init_AtomicsCommon_p;
+chpl_bool chpl__init_ChapelDistribution_p;
+chpl_bool chpl__init_ChapelDynDispHack_p;
+chpl_bool chpl__init_MemConsistency_p;
+chpl_bool chpl__init_StringCasts_p;
+chpl_bool chpl__init_CPtr_p;
+chpl_bool chpl__init_ChapelNumLocales_p;
+chpl_bool chpl__init_ChapelTaskTable_p;
+chpl_bool chpl__init_DefaultAssociative_p;
+chpl_bool chpl__init_DefaultRectangular_p;
+chpl_bool chpl__init_MemTracking_p;
+chpl_bool chpl__init_ChapelBase_p;
+chpl_bool chpl__init_ChapelStandard_p;
+chpl_bool chpl__init_ChapelUtil_p;
+chpl_bool chpl__init_LocaleTree_p;
+chpl_bool chpl__init_List_p;
+chpl_bool chpl__init_ChapelThreads_p;
+chpl_bool chpl__init_LocaleModel_p;
+chpl_bool chpl__init_PrintModuleInitOrder_p;
+chpl_bool chpl__init_Assert_p;
+chpl_bool chpl__init_BaseStringType_p;
+chpl_bool chpl__init_Error_p;
+chpl_bool chpl__init_ChapelTuple_p;
+chpl_bool chpl__init_LocalesArray_p;
+chpl_bool chpl__init_CString_p;
+chpl_bool chpl__init_SysBasic_p;
+chpl_bool chpl__init_Sys_p;
+chpl_bool chpl__init_String_p;
+chpl_bool chpl__init_ChapelLocale_p;
+chpl_bool chpl__init_Atomics_p;
+chpl_bool chpl__init_ChapelRange_p;
+chpl_bool chpl__init_ChapelArray_p;
+chpl_bool chpl__init_Sort_p;
+chpl_bool chpl__init_CommDiagnostics_p;
+chpl_bool chpl__init_ChapelIO_p;
+chpl_bool chpl__init_Regexp_p;
+chpl_bool chpl__init_IO_p;
+int32_t IOHINT_NONE_chpl;
+int32_t IOHINT_RANDOM_chpl;
+int32_t IOHINT_SEQUENTIAL_chpl;
+int32_t IOHINT_CACHED_chpl;
+int32_t IOHINT_PARALLEL_chpl;
+string _r_chpl;
+string _rw_chpl;
+string _cw_chpl;
+string _cwr_chpl;
+_tuple_6_star_string _arg_to_proto_names_chpl;
+channel_F_dynamic_T_chpl stdin_chpl;
+channel_T_dynamic_T_chpl stdout_chpl;
+channel_T_dynamic_T_chpl stderr_chpl;
+DefaultComparator_chpl defaultComparator_chpl;
+ReverseComparator_DefaultComparator_chpl reverseComparator_chpl;
+const int chpl_numGlobalsOnHeap = 0;
+
+ptr_wide_ptr_t chpl_globals_registry[1];
+const int chpl_heterogeneous = 0;
+
+const char* chpl_mem_descs[] = {
+  "this",
+  "c_ptr(uint(8))",
+  "_EndCount(atomic_int64,int(64))",
+  "locale",
+  "_ic_chpl_direct_param_stride_range_iter",
+  "_ic_chpl_direct_range_iter",
+  "_ic_these__ref_string",
+  "_ic_these__ref_range_int64_t_bounded_T",
+  "_ic_these__ref_range_int64_t_bounded_F",
+  "_ic_these__ref_range_int64_t_boundedLow_F",
+  "listNode(BaseArr)",
+  "listNode(BaseDom)",
+  "DefaultDist",
+  "DefaultRectangularDom(1,int(64),false)",
+  "_ic_these__ref_list_BaseArr",
+  "_ddata(locale)",
+  "DefaultRectangularArr(locale,1,int(64),false)",
+  "RootLocale",
+  "_ic_these_DefaultRectangularDom_1_int64_t_F",
+  "_ic_chpl_initOnLocales_AbstractRootLocale",
+  "_ddata(localesSignal)",
+  "DefaultRectangularArr(localesSignal,1,int(64),false)",
+  "_ic_chpl_direct_pos_stride_range_iter",
+  "_ic_these_DefaultRectangularArr_localesSignal_1_int64_t_F",
+  "localesSignal",
+  "LocaleModel",
+  "_ddata(string)",
+  "bundled args"
+};
+const int chpl_mem_numDescs = 28;
+
+void* const chpl_private_broadcast_table[] = {
+  &chpl_verbose_comm,
+  &chpl_comm_diagnostics,
+  &chpl_verbose_mem
+};
+
+#include "chpl-gen-includes.h"

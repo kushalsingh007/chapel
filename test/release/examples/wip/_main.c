@@ -31,7 +31,6 @@
 #include "ChapelDynDispHack.c"
 #include "StringCasts.c"
 #include "ChapelNumLocales.c"
-#include "hello.c"
 #include "Assert.c"
 #include "CommDiagnostics.c"
 #include "SysCTypes.c"
