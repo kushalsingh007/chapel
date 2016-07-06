@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #include "chpltypes.h"
-const char* chpl_compileCommand = "chpl --savec=wip hello.chpl ";
+const char* chpl_compileCommand = "chpl --savec=genCode hello.chpl ";
 const char* chpl_compileVersion = "1.13.1.aca8c33";
 const char* CHPL_HOME = "/Users/kushal/work/chapel";
 const int CHPL_STACK_CHECKS = 1;
@@ -36,7 +36,7 @@ const char* CHPL_WIDE_POINTERS = "struct";
 void chpl_program_about(void);
 
 void chpl_program_about() {
-  printf("%s", "Compilation command: chpl --savec=wip hello.chpl \n");
+  printf("%s", "Compilation command: chpl --savec=genCode hello.chpl \n");
   printf("%s", "Chapel compiler version: 1.13.1.aca8c33\n");
   printf("Chapel environment:\n");
   printf("%s", "  CHPL_HOME: /Users/kushal/work/chapel\n");

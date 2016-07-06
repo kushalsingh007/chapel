@@ -3,7 +3,6 @@
 
 #include "sys_basic.h"
 #include "stdchpl.h"
-#include "chpl_compilation_config.c"
 /*** Class Type Identification Numbers ***/
 
 extern const chpl__class_id chpl__cid_c_ptr_uint8_t;

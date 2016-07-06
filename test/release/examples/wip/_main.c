@@ -1,3 +1,4 @@
+#include "chpl_compilation_config.c"
 #include "chpl__header.h"
 #include "chpl__main.c"
 #include "_config.c"
