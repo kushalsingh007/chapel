@@ -8159,6 +8159,23 @@ buildVirtualMaps() {
   }
 }
 
+static int
+vmTableSort(const void* v1, const void* v2) {
+  FnSymbol* s1 = *(FnSymbol* const *)v1;
+  FnSymbol* s2 = *(FnSymbol* const *)v2;
+  if(s1 == NULL ){
+    USR_FATAL("Unexpected Null symbol while sorting");
+    return -1;
+  }
+  if(s2 == NULL){
+    USR_FATAL("Unexpected Null symbol while sorting");
+    return 1;
+  }
+
+  return strcmp(s1->cname,s2->cname);
+}
+
+
 
 // if exclusive=true, check for fn already existing in the virtual method
 // table and do not add it a second time if it is already present.
@@ -8567,6 +8584,7 @@ static void resolveDynamicDispatches() {
   for (int i = 0; i < virtualMethodTable.n; i++) {
     if (virtualMethodTable.v[i].key) {
       virtualMethodTable.v[i].value->reverse();
+      qsort(virtualMethodTable.v[i].value->v, virtualMethodTable.v[i].value->n, sizeof(virtualMethodTable.v[i].value->v[0]), vmTableSort);
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
         virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
       }
