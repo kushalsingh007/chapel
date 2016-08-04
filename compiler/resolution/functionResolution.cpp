@@ -8058,14 +8058,17 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
               USR_STOP();
             }
             {
+              /* Start: Good to go */
               Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
               if (!fns) fns = new Vec<FnSymbol*>();
               fns->add(fn);
               virtualChildrenMap.put(pfn, fns);
+              /* End: Good to go */
               fn->addFlag(FLAG_VIRTUAL);
               pfn->addFlag(FLAG_VIRTUAL);
             }
             {
+              /* Start : Good to go */
               Vec<FnSymbol*>* fns = virtualRootsMap.get(fn);
               if (!fns) fns = new Vec<FnSymbol*>();
               bool added = false;
@@ -8090,12 +8093,14 @@ addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
                     added = true;
                     break;
                 }
+                /* Start : Good to go ??? Maybe sort here ? */
               }
 
               if (!added)
                 fns->add(pfn);
 
               virtualRootsMap.put(fn, fns);
+              /* End: Good to go */
             }
           }
         }
@@ -8120,6 +8125,7 @@ addAllToVirtualMaps(FnSymbol* fn, AggregateType* pct) {
       // add to maps transitively
       addAllToVirtualMaps(fn, ct);
   }
+  /* Start: Should the sorting be done here ? */
 }
 
 
@@ -8156,6 +8162,37 @@ buildVirtualMaps() {
     }
   }
 }
+/*
+static int
+compareSymbol(const void* v1, const void* v2) {
+  Type* s1 = *(Type* const *)v1;
+  Type* s2 = *(Type* const *)v2;
+  if(s1 == NULL ){
+     return 1;
+  }
+  if(s2 == NULL){
+    return -1;
+  }
+  if (s1->id <= s2->id)
+      return 1;
+  return -1;
+}
+*/
+static int
+compareSymbol2(const void* v1, const void* v2) {
+  FnSymbol* s1 = *(FnSymbol* const *)v1;
+  FnSymbol* s2 = *(FnSymbol* const *)v2;
+  if(s1 == NULL ){
+     return 1;
+  }
+  if(s2 == NULL){
+    return -1;
+  }
+  if (s1->id <= s2->id)
+      return 1;
+  return -1;
+}
+
 
 
 // if exclusive=true, check for fn already existing in the virtual method
@@ -8171,7 +8208,23 @@ addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive /*= false*/)
     }
   }
   fns->add(fn);
+  /*
+  std::cout<<"Printing entries\n";
+  for(int i=0;i<fns->n;i++) {
+    std::cout<<fns->v[i]->id<<'\n';
+  }
+  
+  qsort(fns->v, fns->n, sizeof(fns->v[0]), compareSymbol2);
+  
+  std::cout<<"Re-Printing entries\n";
+  for(int i=0;i<fns->n;i++) {
+    std::cout<<fns->v[i]->id<<'\n';
+  }
+  std::cout<<"\n";
+  
+  */
   virtualMethodTable.put(type, fns);
+  /* Start: Looks a good and safe place to sort ? Whahhchaya think ?*/ 
 }
 
 
@@ -8472,6 +8525,7 @@ static void filterVirtualChildren()
   std::set<FnSymbol*> fns_in_vmt;
   typedef MapElem<Type*,Vec<FnSymbol*>*> VmtMapElem;
   typedef MapElem<FnSymbol*,Vec<FnSymbol*>*> ChildMapElem;
+  std::map<FnSymbol*,std::vector<FnSymbol*>*> vmTable;
   form_Map(VmtMapElem, el,  virtualMethodTable) {
     if (el->value) {
       forv_Vec(FnSymbol, fn, *el->value) {
@@ -8492,6 +8546,8 @@ static void filterVirtualChildren()
       delete oldV;
     }
   }
+  /* Start : I think this would be a good place to sort */
+  /* Need to figure out the order in which stuff gets called */
 }
 
 static void resolveDynamicDispatches() {
@@ -8516,13 +8572,22 @@ static void resolveDynamicDispatches() {
     }
     virtualRootsMap.clear();
     buildVirtualMaps();
+    /* Start: Can sort here ? Whatchhya say ? */
   } while (num_types != gTypeSymbols.n);
+
+  for (int i = 0; i < virtualRootsMap.n; i++) {
+    if(virtualRootsMap.v[i].key) {
+      qsort(virtualRootsMap.v[i].value->v, virtualRootsMap.v[i].value->n, sizeof(virtualRootsMap.v[i].value->v[0]), compareSymbol2);
+    }
+  }
+
 
   for (int i = 0; i < virtualRootsMap.n; i++) {
     if (virtualRootsMap.v[i].key) {
       for (int j = 0; j < virtualRootsMap.v[i].value->n; j++) {
         FnSymbol* root = virtualRootsMap.v[i].value->v[j];
         addVirtualMethodTableEntry(root->_this->type, root, true);
+        /* Start: Maybe a good place to sort ?? */
       }
     }
   }
@@ -8542,6 +8607,11 @@ static void resolveDynamicDispatches() {
                 if (!childSet.set_in(cfn->_this->type)) {
                   addVirtualMethodTableEntry(cfn->_this->type, cfn);
                   childSet.set_add(cfn->_this->type);
+                  /* Start: Sorting location : The idea is not to simply sort 
+                  the whole thing, but to sort only the value that has been 
+                  stored , not the key , we just want the fn vector to be in 
+                  order for now 
+                  */
                 }
                 break;
               }
@@ -8560,16 +8630,7 @@ static void resolveDynamicDispatches() {
     }
   }
 
-  // reverse the entries in the virtual method table
-  // populate the virtualMethodMap
-  for (int i = 0; i < virtualMethodTable.n; i++) {
-    if (virtualMethodTable.v[i].key) {
-      virtualMethodTable.v[i].value->reverse();
-      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
-        virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
-      }
-    }
-  }
+  /* Start: I think that this would be a good place to sort (THE FNS vectors) */
 
   // remove entries in virtualChildrenMap that are not in
   // virtualMethodTable. When a parent has a generic method and
@@ -8577,7 +8638,35 @@ static void resolveDynamicDispatches() {
   // get multiple entries while the logic above with childSet
   // ensures that the virtualMethodTable only has one entry.
   filterVirtualChildren();
-
+  /* Start : This is a better place to sort than the previous one 
+  and this is the function where the virtualMethodTable is actually built
+  
+  */
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if(virtualMethodTable.v[i].key) {
+      //virtualMethodTable.v[i].value->reverse();
+      //qsort(virtualMethodTable.v[i].value->v, virtualMethodTable.v[i].value->n, sizeof(virtualMethodTable.v[i].value->v[0]), compareSymbol2);
+    }
+  }
+  
+  for (int i = 0; i < virtualChildrenMap.n; i++) {
+    if(virtualChildrenMap.v[i].key) {
+      qsort(virtualChildrenMap.v[i].value->v, virtualChildrenMap.v[i].value->n, sizeof(virtualChildrenMap.v[i].value->v[0]), compareSymbol2);
+    }
+  }
+  
+  
+    // reverse the entries in the virtual method table
+    // populate the virtualMethodMap
+    for (int i = 0; i < virtualMethodTable.n; i++) {
+      if (virtualMethodTable.v[i].key) {
+        //virtualMethodTable.v[i].value->reverse();
+        for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
+          virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
+        }
+      }
+    }
+  
   inDynamicDispatchResolution = false;
 
   if (fPrintDispatch) {
@@ -8915,6 +9004,10 @@ static void insertDynamicDispatchCalls() {
       // problems when it tries to read the cid of a remote class.  See
       // test/classes/sungeun/remoteDynamicDispatch.chpl (on certain
       // machines and configurations).
+      
+      /* Start : I guess this is the place where the indexes get starting used 
+        SO this might be an important point from debugging point of view */
+      
       VarSymbol* cid = newTemp("_virtual_method_tmp_", dtInt[INT_SIZE_32]);
       call->getStmtExpr()->insertBefore(new DefExpr(cid));
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, cid, new CallExpr(PRIM_GETCID, call->get(2)->copy())));
