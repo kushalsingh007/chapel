@@ -8159,23 +8159,29 @@ buildVirtualMaps() {
   }
 }
 
-static int
-vmTableSort(const void* v1, const void* v2) {
-  FnSymbol* s1 = *(FnSymbol* const *)v1;
-  FnSymbol* s2 = *(FnSymbol* const *)v2;
-  if(s1 == NULL ){
-    USR_FATAL("Unexpected Null symbol while sorting");
-    return -1;
-  }
-  if(s2 == NULL){
-    USR_FATAL("Unexpected Null symbol while sorting");
-    return 1;
+static bool
+vmtCompareSymbol(std::pair<Type*,Vec<FnSymbol*> *>& lhs, std::pair<Type*,Vec<FnSymbol*> *>& rhs) {
+  Type* s1 = (Type*)lhs.first;
+  Type* s2 = (Type*)rhs.first;
+  if(s1 == NULL || s2 == NULL)
+    USR_FATAL("Unexpected NULL symbol encountered while sorting\n");
+
+  ModuleSymbol* m1 = s1->getModule();
+  ModuleSymbol* m2 = s2->getModule();
+  if (m1 != m2) {
+    if (m1->modTag < m2->modTag)
+      return 1;
+    if (m1->modTag > m2->modTag)
+      return 0;
+    return strcmp(m1->cname, m2->cname) < 0;
   }
 
-  return strcmp(s1->cname,s2->cname);
+  if (s1->linenum() != s2->linenum())
+    return s1->linenum() < s2->linenum();
+
+  int result = strcmp(s1->symbol->cname, s2->symbol->cname);
+  return result < 0;
 }
-
-
 
 // if exclusive=true, check for fn already existing in the virtual method
 // table and do not add it a second time if it is already present.
@@ -8584,12 +8590,17 @@ static void resolveDynamicDispatches() {
   for (int i = 0; i < virtualMethodTable.n; i++) {
     if (virtualMethodTable.v[i].key) {
       virtualMethodTable.v[i].value->reverse();
-      qsort(virtualMethodTable.v[i].value->v, virtualMethodTable.v[i].value->n, sizeof(virtualMethodTable.v[i].value->v[0]), vmTableSort);
-      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
-        virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
-      }
+      sortedVMTable.push_back(std::make_pair(virtualMethodTable.v[i].key, virtualMethodTable.v[i].value));
     }
   }
+  std::sort(sortedVMTable.begin(),sortedVMTable.end(),vmtCompareSymbol);
+
+  for (int i = 0; i < sortedVMTable.size(); i++) {
+    for (int j = 0; j < sortedVMTable[i].second->n; j++) {
+      virtualMethodMap.put(sortedVMTable[i].second->v[j], j);
+    }
+  }
+
 
   // remove entries in virtualChildrenMap that are not in
   // virtualMethodTable. When a parent has a generic method and

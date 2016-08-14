@@ -99,6 +99,7 @@ FnSymbol* gChplDoDirectExecuteOn = NULL;
 std::map<FnSymbol*,int> ftableMap;
 Vec<FnSymbol*> ftableVec;
 
+std::vector<std::pair<Type*,Vec<FnSymbol*>*> > sortedVMTable;
 Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
 Map<FnSymbol*,int> virtualMethodMap;
 Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;

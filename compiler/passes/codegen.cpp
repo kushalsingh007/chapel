@@ -326,7 +326,12 @@ genVirtualMethodTable(Vec<TypeSymbol*>& types, bool isHeader) {
             fprintf(hdrfile, ",\n");
           fprintf(hdrfile, " /* %s */\n", ct->symbol->cname);
           int n = 0;
-          if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
+          Vec<FnSymbol*>* vfns = NULL;
+          for(int i = 0;i < sortedVMTable.size(); i++) {
+            if(sortedVMTable[i].first==ct)
+              vfns = sortedVMTable[i].second;
+          }
+          if (vfns) {
             forv_Vec(FnSymbol, vfn, *vfns) {
               if (n > 0)
                 fprintf(hdrfile, ",\n");

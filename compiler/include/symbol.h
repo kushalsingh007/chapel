@@ -651,6 +651,7 @@ extern Vec<FnSymbol*> ftableVec;
 // inheritance will require more virtual method tables, one for each
 // path up the class hierarchy to each class root.
 //
+extern std::vector<std::pair<Type*,Vec<FnSymbol*>*> > sortedVMTable;
 extern Map<Type*,Vec<FnSymbol*>*> virtualMethodTable;
 extern Map<FnSymbol*,int> virtualMethodMap;
 extern Map<FnSymbol*,Vec<FnSymbol*>*> virtualChildrenMap;
