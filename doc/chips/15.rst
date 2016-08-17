@@ -10,19 +10,18 @@ Author
 Abstract
 --------
 
-This document presents the different approches to the problem that were considered
-along with future plans for the same.
+Currently, re-compiling a Chapel program would mean re-compiling the parts that haven’t changed, including the functions that haven’t been altered since the last compilation. The idea behind this project is to utilise the already existing information that compiler already has to speed up re-compilation. The main steps in the project would be to start away with restructuring the way currently elements with same name are distinguished. The main goal would be to create a code cache which can be stored in as a part of the object file. We would like to utilise our code cache to avoid re-instantiation and recompilation for functions that are already present as a part of the code cache, and finally we want to be able to re-link the correct functions and symbols from the cache during the building of the executable.
 
-Rationale
----------
-
-Currently, re-compiling a Chapel program means re-compiling even the parts that
-haven’t changed, such as functions that haven’t been altered since the last compilation. We’d like to adjust our compiler to reuse some of the information it already has. The goal envisioned is to create a code cache and adjust function resolution to not instantiate/compile a function that is already compiled in the cache and hence obtain a speedup by improving the compile time.
 
 Description
 -----------
 
-<Something>
+The idea of this project is to speed up re-compilation. A part of which revolves around hashing up the AST. The idea is to  hash the function nodes present in the AST and compare based on the hash value, if the function has been modified. The granularity at which we make this checks can be adjusted, for instance instead of per function basis approach, we can switch to per module based approach. Once we identify the places where our current AST differs, we can accordingly choose a plan of action. The main part of the project would be dealing with the function resolution. For  generic function which have been modified, we need to identify the locations at which the function got instantiated and all those instantiations will need to be re-instantiated again (and the current one’s being removed). If the function is not a generic function then such a case would not arise, and we would can work at the same resolution level. There might be certain extra cases which we might have to consider, for instance changing the return type of a function would need identifying all the locations where it is being called so that appropriate handling can be done. Some part of the hash computation and utilising the code cache would need some modifications in the resolve pass. The re-computation of the hash value and checking can also be done to some extent just after the resolve pass is complete. However, it may would in a bit of extra re-computation.
+
+Once we are able to create a code cache, which we can store at the end of our object file (.o file). We can store a modified version of the AST, since we may not need the entire information present in the AST, but only a subset of it. This modified AST can then be stored in the .o file. Now, we would need to identify during our function resolution, if the cache already contains instance of our generic function, so that we need not re-instantiate a function that is already present in the cache. We can make appropriate changes during our resolve pass to identify if the cache already holds the instance, in which case it can be appropriately utilised.  A significant part of changes would be in the code generation part, where based on the code cache, we should not re-compile the functions which are already present in the code cache. This might also need some changes during the resolve pass, to see if a function has already been resolved previously, and is present in the cache. Code generation will have to be adjusted to appropriately handle these conditions. Lastly, we would need to adjust executable building to link in the symbols from the cache.
+
+Since most of the changes that we make require us to identify the locations where a given function has been instantiated/called. We can utilise the underlying structure of our FnSymbol Class, which is used to represent all the methods and functions in a program. The class has different fields which get populated during the function resolution, some of which include instantiatedFrom ( set for functions that have been instantiated from a generic function), instantiationPoint (points to point in code which we are using as instantiation point for function resolution), and calledBy vector (which points to all of the caller expressions, that call the function). The calledBy vector is computed by compute_call_sites (which essentially builds a call graph for the entire program represented by the AST). The compute_call_sites function can be modified or utilised to find out the positions where the changes can be made. Other useful functions that can be utilised to avoid re-computation would include collectFnCalls which essentially collects all the CallExprs that are not primitive. Also, we need to identify if our function is generic or not and modify the action taken based it, we can also utilise getVisibleFunctions to help us identify this. So, a major part of the project would be to utilise this and other underlying information that is already present, and modify the logic to accommodate and take into the account the parts where utilising a code cache can be helpful. The ideals and goals were thought iteratively thought of, and re-structured during different phases of the project. Finally we came up with an approach (described in the next section), which essentially leads to an easier way to approach the issue in terms of understanding it, and starting from basic building blocks for the same.
+
 
 Paths considered
 ----------------
@@ -77,11 +76,10 @@ The first two changes would essentially mean trying to modify the .o for the lib
 
 So essentially we would want to have dead-code elimination turned off during --incremental compilation, however we would like to fine grain the way dead-code elimination works with --incremental. Since, we would still want the unused instructions to get removed, so this would require some more fine tuning. Once this is done, then we can integrate and move towards the function resolution and try to integrate our cache at the appropriate places so as to obtain a speedup.
 
-<Can add more here, on how to do function resolution, however we haven't discussed much of it yet>
 
 Issues
 ------
 * A part of the future goals would also be to find a workaround for this issue.
   (static + true header issue)
 * Diff b/w different runs vmtable and stuff(write down all the problems that were faced here)
-* Flip side with deadcode elimination
+* Flip side with deadcode elimination (generic instantiation)
