@@ -1,5 +1,5 @@
 Chapel Incremental Compilation
-============================
+==============================
 
 Status
   Draft
@@ -17,140 +17,65 @@ Rationale
 ---------
 
 Currently, re-compiling a Chapel program means re-compiling even the parts that
-haven’t changed, such as functions that haven’t been altered since the last compilation.
-We’d like to adjust our compiler to reuse some of the information it already has. The
-goal envisioned is to create a code cache and adjust function resolution to not instantiate/compile
-a function that is already compiled in the cache and hence obtain a speedup by improving the compile
-time.
+haven’t changed, such as functions that haven’t been altered since the last compilation. We’d like to adjust our compiler to reuse some of the information it already has. The goal envisioned is to create a code cache and adjust function resolution to not instantiate/compile a function that is already compiled in the cache and hence obtain a speedup by improving the compile time.
 
 Description
 -----------
 
-
+<Something>
 
 Paths considered
 ----------------
 
-The initial approach was to first start of with splitting the header file into smaller pieces,
-so that each module can compile independently. The goal was to enable each of the module files 
-on which we depend to be able to compiled independently and then linked all together, as opposed
-to having everything getting compiled together all at once. We wanted to create a single header
-file per standard/internal module instead of putting all the declarations in chpl__header.h.
-The generated .c file would #include the module header for all the module it needs, as known
-via module use list. (using include-guards), special care needed for user modules. However this
-approach did have some issues , for instance , if the modification occured to the declaration of
-the function, then the header would always have to be updated. Which would mean that files which
-relied on it would have to be updated too. Which eseentially meant regenerating .o for those
-even if we did not re-write the .c files. Another issue with this approach was finding whether
-a function has changed was a problem for both the function resolution and make binary step.
-So based on these issues and on further discussion a later step by step approach was discussed
-which has been described in the later half of the description, which was followed for the second
-half of the duration.
+The initial approach was to first start of with splitting the header file into smaller pieces, so that each module can compile independently. The goal was to enable each of the module files on which we depend to be able to compiled independently and then linked all together, as opposed to having everything getting compiled together all at once. We wanted to create a single header file per standard/internal module instead of putting all the declarations in chpl__header.h. The generated .c file would #include the module header for all the module it needs, as known via module use list. (using include-guards), special care needed for user modules. However this approach did have some issues , for instance , if the modification occurred to the declaration of the function, then the header would always have to be updated. Which would mean that files which relied on it would have to be updated too. Which essentially meant regenerating .o  for those even if we did not re-write the .c files. Another issue with this approach was finding whether a function has changed was a problem for both the function resolution and make binary step. So based on these issues and on further discussion a later step by step approach was discussed which has been described in the later half of the description, which was followed for the second half of the duration.
 
-However interesting observation that we did come across during this part was that we can build
-up test cases based on which we can verify the correctness, since the changes aren’t interactive.
-The different flag changes can be handled by the test case system. Basic implementation can work
-without recombining flags, however a more refined and sophistication approach would have to take
-into account the diffent flags that come into play and how they affect each other. Now this feature
-is a purely performance based feature, we would not like to yield false positives and give incorrect
-results in cases when we shouldn't. Hence we need to also have a testing mechanism later on that would
-indicate whether the feature is working as expected. Since it would be linked to a cache, and based
-on that it would try to touch different parts of it , we can have a seperate style for testing such
-a feature.
+However interesting observation that we did come across during this part was that we can build up test cases based on which we can verify the correctness, since the changes aren’t interactive. The different flag changes can be handled by the test case system. Basic implementation can work without recombining flags, however a more refined and sophistication approach would have to take into account the different flags that come into play and how they affect each other. Now this feature is a purely performance based feature, we would not like to yield false positives and give incorrect results in cases when we shouldn't. Hence we need to also have a testing mechanism later on that would indicate whether the feature is working as expected. Since it would be linked to a cache, and based on that it would try to touch different parts of it , we can have a separate style for testing such a feature.
 
-The planned way to check if a file foo.chpl has works as planned would be to have copies of
-foo.chpl all slighly modified. A file named foo.orig.chpl would be the initial never-before-compiled
-version. We’d copy it on top of foo.chpl after compiling once foo.orig.chpl (layered over it) and
-then try recompiling. In the process we can check which of the files were touched (in cache), and
-verify that the executable behaved correctly for the changes and the code that hadn’t been updated.
-The same process can be repeated for different versions of like foo.step2.chpl, .. foo.stepN.chpl.
-This way we can have expected output for each of the modifications, and save changes for reproducibility. 
-The following shows some different 2-3 lined programs all with slighl modified version of the same code
-Sample testcases : http://bit.ly/1YcIIhZ 
+The planned way to check if a file foo.chpl has works as planned would be to have copies of foo.chpl all slightly modified. A file named foo.orig.chpl would be the initial never-before-compiled version. We’d copy it on top of foo.chpl after compiling once foo.orig.chpl (layered over it) and then try recompiling. In the process we can check which of the files were touched (in cache), and verify that the executable behaved correctly for the changes and the code that hadn’t been updated. The same process can be repeated for different versions of like foo.step2.chpl, .. foo.stepN.chpl.
+This way we can have expected output for each of the modifications, and save changes for reproducibility. The following shows some different 2-3 lined programs all with slightly modified version of the same code
 
-Now even though there was a slight mention about the compiler flags , there was a few more things related
-to it. The flags that are in play , do affect how the particular function goes through the compiler.
-(--no-checks, --no-inline etc). Also, they do affect the end results and affect how they are used in the
-next compilation. One way to take this interplay of flags into account can be to have multiple versions
-of a function. (However the drawback is that based on the different combination of flags , this would lead
-to an exponential blowup). The other way (the better way to test would however include, saving the flag
-with which the function was compiled and then pay an algorithmic cost to determine how the function would
-respond to particular changes. This approach would be better since the total number of flags are finite.
+Sample foo.chpl versions : http://bit.ly/1YcIIhZ 
 
-There was also a bit of discussion about how we wanted to work based on a pass level granularity (multi-pass approach).
-Now there are atleast 7 passes which are (obtained via flags) to be taken into account, resolve, inlineFunctions,
-loopInvariantCodeMotion, copyPropagation, deadCode Elimination, scalarReplace and codegen etc, 
-for which we would have to maintain state for.We can have way-points, e.g resolve’s check would handle the passes after
-resolve but before deadCodeElimination, and deadCodeElimination would handle everything from there to codegen.
-For correctness we need to respond to the changes that occur in these passes, and the way point option would be to
-avoid the cost of having to store information on a function for each individual pass.
+Now even though there was a slight mention about the compiler flags , there was a few more things related to it. The flags that are in play , do affect how the particular function goes through the compiler (--no-checks, --no-inline etc). Also, they do affect the end results and affect how they are used in the next compilation. One way to take this interplay of flags into account can be to have multiple versions of a function. (However the drawback is that based on the different combination of flags , this would lead to an exponential blowup). The other way (the better way to test would however include, saving the flag with which the function was compiled and then pay an algorithmic cost to determine how the function would respond to particular changes. This approach would be better since the total number of flags are finite.
 
+There was also a bit of discussion about how we wanted to work based on a pass level granularity (multi-pass approach). Now there are at-least 7 passes which are (obtained via flags) to be taken into account, resolve, inlineFunctions, loopInvariantCodeMotion, copyPropagation, deadCode Elimination, scalarReplace and codegen etc, for which we would have to maintain state for.We can have way-points, e.g resolve’s check would handle the passes after resolve but before deadCodeElimination, and deadCodeElimination would handle everything from there to codegen. For correctness we need to respond to the changes that occur in these passes, and the way point option would be to avoid the cost of having to store information on a function for each individual pass.
 
 However towards the end, was is the main approach / building blocks we have been trying to
 follow :
-1) Our header file, which is generated has usually static symbols etc, which make it difficult
-to link it into multiple places. So a part of the work would be to make sure that static keyword
-is removed to allow linking in from multiple places. The other part would be making sure that the
-chpl__header.h file actually has only the declarations and not the defintions. We have achieved the
-splitting of header file completely , however removing static keyword causes a performance drop in
-some of our benchmark programs. Hence we support it completely only with the use of --incremental
-flag. This also follows our initial design idea of trying to have things compile independently, rather
-than compiling everything at once.
-2) The next part once we have a header file would be to link it into multiple different locations,
-this would require adding a #include to the user code to chpl__header.h and instead of including then
-in the _main.c  file (which causes one big .o file to get generated), we want separate .o files to be
-generated, which can then be later re-linked. Note that this generation of multiple .o files too is
-done only with the --incremental flag. Since currently in the normal compilation mode, we do add the
-'static' keyword , which does not allow #including of header file at multiple places.
-3) The next step once we have the different .o files would be to save the .c/.o files that haven't changed
-between two different compilation runs. The way to achieve this is to create a new directory like --savec
-does, and then based on that we start populating the cache. A point worth mentioning here is that along with
-different .o's and .c's, we would also try to store the values of different flags and environment variables
-for that run (this however can be done using the printchplenv mechanism). Essentially we would have two directories
-here, One which gets generated each time (like the tmp directory for --savec), and the other one which is at a fixed
-location. For the first run we simple copy the contents into the cache, for the next run we do a quick diff
-to find out the regions which haven't changed. Once that is done, we can analyse how the program behaves with
-small modifications to the user code. This is mainly an understanding step, once we are able to successfully
-understand an analyse this we can easily move to more sophesticated analysis techniques.
-4) Once we have this mechanism set up in place, we can then start detecting the modificaiton to the files
-in the chapel compiler, we want to do some verification here first as a precautionary step to ensure that
-all the files we expect to be same are generated the same. This would include the following :
-  ** Detecting the changes to the compiler flags and environment variables
-  ** Detecting if the code has changed due to :
-      *** Changes in it's body and declaration (includes arguments, return types  etc). This can be detected once we
-          have the old AST representation.
-      *** Changes in the function call, this would include identifying where the functions were called from (can utilise
-          some of the existing machinary like compute_call_sites() here). This step however would be harder as the info for
-          this is not populated till function resolution.
-      *** New candidates to resolve against for a function call.
-  ** This would require marking the nodes which haven't changed, so that passes later than when this detection has occured
-     can benifit from it.
-There were a few simplyfing assumptions however with this model (which may require more detailed analysis later on) :
-1) Current assumption was that if there is a change in the standard and internal libarary, or change in the command line
-arguments or environment labels the cache would not be re-usuable again. This however is not true in general, but would require
-a finer and more detailed analysis.
-2) The idea was to start with a single module program and move on from there, to get a better understanding
 
-Once we have our cache mechanism fully set up, and we can successfully move the changed stable files, this is essentially can be
-done at a later stage :
-The next step would be to try and identify the ways to minimize the frequency of library .c diff's yielding changes. Basically, when a
-Chapel user file has changed, the changes can easily fall into one of these 4 categorie :
+1) Our header file, which is generated has usually static symbols etc, which make it difficult to link it into multiple places. So a part of the work would be to make sure that static keyword is removed to allow linking in from multiple places. The other part would be making sure that the chpl__header.h file actually has only the declarations and not the definitions. We have achieved the splitting of header file completely , however removing static keyword causes a performance drop in some of our benchmark programs. Hence we support it completely only with the use of --incremental flag. This also follows our initial design idea of trying to have things compile independently, rather than compiling everything at once.
+
+2) The next part once we have a header file would be to link it into multiple different locations, this would require adding a #include to the user code to chpl__header.h and instead of including then in the _main.c  file (which causes one big .o file to get generated), we want separate .o files to be generated, which can then be later re-linked. Note that this generation of multiple .o files too is done only with the --incremental flag. Since currently in the normal compilation mode, we do add the 'static' keyword , which does not allow #including of header file at multiple places.
+
+3) The next step once we have the different .o files would be to save the .c/.o files that haven't changed between two different compilation runs. The way to achieve this is to create a new directory like --savec does, and then based on that we start populating the cache. A point worth mentioning here is that along with different .o's and .c's, we would also try to store the values of different flags and environment variables for that run (this however can be done using the printchplenv mechanism). Essentially we would have two directories here, One which gets generated each time (like the tmp directory for --savec), and the other one which is at a fixed location. For the first run we simple copy the contents into the cache, for the next run we do a quick diff to find out the regions which haven't changed. Once that is done, we can analyse how the program behaves with small modifications to the user code. This is mainly an understanding step, once we are able to successfully understand an analyse this we can easily move to more sophisticated analysis techniques.
+
+4) Once we have this mechanism set up in place, we can then start detecting the modification to the files in the chapel compiler, we want to do some verification here first as a precautionary step to ensure that all the files we expect to be same are generated the same. This would include the following :
+
+* Detecting the changes to the compiler flags and environment variables
+* Detecting if the code has changed due to :
+
+ * Changes in it's body and declaration (includes arguments, return types  etc). This can be detected once we have the old AST representation.
+ * Changes in the function call, this would include identifying where the functions were called from (can utilise some of the existing machinery like compute_call_sites() here). This step however would be harder as the info for this is not populated till function resolution.
+
+* New candidates to resolve against for a function call.
+* This would require marking the nodes which haven't changed, so that passes later than when this detection has occurred can benefit from it.
+
+There were a few simplifying assumptions however with this model (which may require more detailed analysis later on) :
+
+* Current assumption was that if there is a change in the standard and internal library, or change in the command line arguments or environment labels the cache would not be re-useable again. This however is not true in general, but would require a finer and more detailed analysis.
+
+*  The idea was to start with a single module program and move on from there, to get a better understanding
+
+Once we have our cache mechanism fully set up, and we can successfully move the changed stable files, this is essentially can be done at a later stage. The next step would be to try and identify the ways to minimise the frequency of library .c diff's yielding changes. Basically, when a Chapel user file has changed, the changes can easily fall into one of these 4 categories :
+
 1) Cause a new instantiation of generic library function/type.
 2) Cause a previously deadCode eliminated function to be used.
 3) Reuse lib definition that was previously modified.
 4) Only impact the application level code.
 
-The first two changes would essentially mean trying to modify the .o for the libray, and the two would fall into the category, where using
-the .o (for the libray would be safe). The first two changes would cause recompilation and would essentially mean that we do not save any
-time during our make binary phase. So our main focus would be to try and work towards minimise case 1. A potential way to fix case 2 would
-be to turn off dead-code elimination during --incremental, since dead code elimination would essentially mean removal of dead functions and
-instructions. So if we don't avoid having unused functions, then we can easily avoid recompilation. Also, it is quite common for a user to
-access library functions that they haven't used previously than having new generic instances of functions that they are already using.
+The first two changes would essentially mean trying to modify the .o for the library, and the two would fall into the category, where using the .o (for the library would be safe). The first two changes would cause recompilation and would essentially mean that we do not save any time during our make binary phase. So our main focus would be to try and work towards minimising case ``1`` . A potential way to fix case ``2`` would be to turn off dead-code elimination during --incremental, since dead code elimination would essentially mean removal of dead functions and instructions. So if we don't avoid having unused functions, then we can easily avoid recompilation. Also, it is quite common for a user to access library functions that they haven't used previously than having new generic instances of functions that they are already using.
 
-So essentially we would want to have dead-code elimiation turned off during --incremetal compilation, however we would like to fine grain
-the way dead-code elimination works with --incremental. Since, we would still want the unused instructions to get removed, so this would require
-some more fine tuning. Once this is done, then we can integrate then move towards the function resolution and try to integrate our cache at the
-approriate places so as to obtain a speedup.
+So essentially we would want to have dead-code elimination turned off during --incremental compilation, however we would like to fine grain the way dead-code elimination works with --incremental. Since, we would still want the unused instructions to get removed, so this would require some more fine tuning. Once this is done, then we can integrate and move towards the function resolution and try to integrate our cache at the appropriate places so as to obtain a speedup.
 
 <Can add more here, on how to do function resolution, however we haven't discussed much of it yet>
 
