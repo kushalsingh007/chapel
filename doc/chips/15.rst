@@ -50,16 +50,14 @@ follow :
 
 4) Once we have this mechanism set up in place, we can then start detecting the modification to the files in the chapel compiler, we want to do some verification here first as a precautionary step to ensure that all the files we expect to be same are generated the same. This would include the following :
 
-* Detecting the changes to the compiler flags and environment variables
-* Detecting if the code has changed due to :
+1. Detecting the changes to the compiler flags and environment variables
+2. Detecting if the code has changed due to :
 
-    * Changes in it's body and declaration (includes arguments, return types  etc). This can be detected once we have the old AST representation.
-    * Changes in the function call, this would include identifying where the functions were called from (can utilise some of the existing machinery like compute_call_sites() here). This step however would be harder as the info for this is not populated till function resolution.
-
+* Changes in it's body and declaration (includes arguments, return types  etc). This can be detected once we have the old AST representation.
+* Changes in the function call, this would include identifying where the functions were called from (can utilise some of the existing machinery like compute_call_sites() here). This step however would be harder as the info for this is not populated till function resolution.
 * New candidates to resolve against for a function call.
-* This would require marking the nodes which haven't changed, so that passes later than when this detection has occurred can benefit from it.
 
-There were a few simplifying assumptions however with this model (which may require more detailed analysis later on) :
+This would require marking the nodes which haven't changed, so that passes later than when this detection has occurred can benefit from it. There were a few simplifying assumptions however with this model (which may require more detailed analysis later on)
 
 * Current assumption was that if there is a change in the standard and internal library, or change in the command line arguments or environment labels the cache would not be re-useable again. This however is not true in general, but would require a finer and more detailed analysis.
 
