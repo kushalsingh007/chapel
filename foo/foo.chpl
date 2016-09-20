@@ -50,7 +50,11 @@ module OurModule{
   }
 }
 
-//Foo.step10.chpl : The parameter that is passed along is generic which in turn makes the function generic :/
+//Foo.step10.chpl : The parameter that is passed along is generic which in turn makes the function generic
+.
+.
+.
+.
 
 
 
